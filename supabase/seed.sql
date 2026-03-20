@@ -18,8 +18,8 @@ declare
   vertex_company_id uuid := gen_random_uuid();
 
   -- Replace these with actual UUIDs from auth.users after creating users
-  acme_hm_user_id uuid := '00000000-0000-0000-0000-000000000001';
-  vertex_hm_user_id uuid := '00000000-0000-0000-0000-000000000002';
+  acme_hm_user_id uuid := 'bdc35e92-ec7c-490d-b1e0-ab81f4cd677a';
+  vertex_hm_user_id uuid := '69dcaf42-b8f8-4e74-b5c6-5411ed1eda2f';
 
   acme_role1_id uuid := gen_random_uuid();
   acme_role2_id uuid := gen_random_uuid();
@@ -33,9 +33,9 @@ insert into public.companies (id, name, slug) values
   (vertex_company_id, 'Vertex Labs', 'vertex-labs');
 
 -- Profiles
-insert into public.profiles (id, company_id, role, full_name, email) values
-  (acme_hm_user_id, acme_company_id, 'hiring_manager', 'Alex (Acme)', 'hm@demo-acme.com'),
-  (vertex_hm_user_id, vertex_company_id, 'hiring_manager', 'Jordan (Vertex)', 'hm@demo-vertex.com');
+-- insert into public.profiles (id, company_id, role, full_name, email) values
+--   (acme_hm_user_id, acme_company_id, 'hiring_manager', 'Alex (Acme)', 'hm@demo-acme.com'),
+--   (vertex_hm_user_id, vertex_company_id, 'hiring_manager', 'Jordan (Vertex)', 'hm@demo-vertex.com');
 
 -- Roles for Acme Corp
 insert into public.roles (id, company_id, title, department, status, created_by) values
