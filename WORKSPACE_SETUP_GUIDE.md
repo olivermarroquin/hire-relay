@@ -6,6 +6,7 @@
 Recruiter submits candidate via shareable link → Hiring manager receives email with review link → Hiring manager makes decision (Interview / Hold / Reject) → Recruiter receives status email → Decision logged in dashboard
 
 **Out of scope for Week 1:**
+
 - Recruiter accounts / login
 - Email parsing
 - Self-serve company onboarding
@@ -18,14 +19,14 @@ Recruiter submits candidate via shareable link → Hiring manager receives email
 
 ## B. Tech Stack
 
-| Layer | Choice | Why |
-|---|---|---|
-| Framework | Next.js 14 (App Router, TypeScript) | Full-stack in one repo, great DX, scales |
-| Database | Supabase (Postgres + RLS) | Auth + DB + Storage in one, free tier, built-in multi-tenancy via RLS |
-| Auth | Supabase magic link | Fits the product model, ships in one day |
-| Styling | Tailwind CSS + shadcn/ui | Fastest path to a polished UI |
-| Email | Resend | Simple API, reliable delivery, generous free tier |
-| Deployment | Vercel | Zero-config Next.js deployment, preview URLs |
+| Layer      | Choice                              | Why                                                                   |
+| ---------- | ----------------------------------- | --------------------------------------------------------------------- |
+| Framework  | Next.js 14 (App Router, TypeScript) | Full-stack in one repo, great DX, scales                              |
+| Database   | Supabase (Postgres + RLS)           | Auth + DB + Storage in one, free tier, built-in multi-tenancy via RLS |
+| Auth       | Supabase magic link                 | Fits the product model, ships in one day                              |
+| Styling    | Tailwind CSS + shadcn/ui            | Fastest path to a polished UI                                         |
+| Email      | Resend                              | Simple API, reliable delivery, generous free tier                     |
+| Deployment | Vercel                              | Zero-config Next.js deployment, preview URLs                          |
 
 **Scales because:** Supabase runs on Postgres (no migrations needed when you grow), Next.js handles millions of requests, Vercel auto-scales, RLS-based multi-tenancy is production-grade.
 
@@ -177,21 +178,21 @@ mkdir -p supabase/migrations
 
 Copy each file from this guide into the correct path in your repo:
 
-| File | Destination |
-|---|---|
-| CLAUDE.md | `/CLAUDE.md` |
-| README.md | `/README.md` |
-| .env.local.example | `/.env.local.example` |
+| File                   | Destination                                   |
+| ---------------------- | --------------------------------------------- |
+| CLAUDE.md              | `/CLAUDE.md`                                  |
+| README.md              | `/README.md`                                  |
+| .env.local.example     | `/.env.local.example`                         |
 | 001_initial_schema.sql | `/supabase/migrations/001_initial_schema.sql` |
-| seed.sql | `/supabase/seed.sql` |
-| index.ts (types) | `/src/types/index.ts` |
-| brief.md | `/docs/product/brief.md` |
-| mvp-scope.md | `/docs/product/mvp-scope.md` |
-| user-flows.md | `/docs/product/user-flows.md` |
-| data-model.md | `/docs/architecture/data-model.md` |
-| routes.md | `/docs/architecture/routes.md` |
-| roadmap.md | `/docs/execution/roadmap.md` |
-| decisions.md | `/docs/execution/decisions.md` |
+| seed.sql               | `/supabase/seed.sql`                          |
+| index.ts (types)       | `/src/types/index.ts`                         |
+| brief.md               | `/docs/product/brief.md`                      |
+| mvp-scope.md           | `/docs/product/mvp-scope.md`                  |
+| user-flows.md          | `/docs/product/user-flows.md`                 |
+| data-model.md          | `/docs/architecture/data-model.md`            |
+| routes.md              | `/docs/architecture/routes.md`                |
+| roadmap.md             | `/docs/execution/roadmap.md`                  |
+| decisions.md           | `/docs/execution/decisions.md`                |
 
 ### Phase 5 — Configure environment
 
@@ -243,8 +244,16 @@ git push -u origin main
 
 ### Task 1 — Supabase Clients + Auth Callback
 
+Before you paste the prompt, do this:
+
+Open the relevant files in VS Code first
+Open CLAUDE.md and docs/architecture/data-model.md as active tabs. Claude Code picks up open files as context automatically.
+
 **Prompt for Claude Code:**
+
 ```
+We're building the recruiter-collab MVP. Read CLAUDE.md and docs/architecture/data-model.md before writing any code.
+
 Feature: Supabase client setup and auth callback
 Relevant docs: docs/architecture/data-model.md, CLAUDE.md
 Files to create:
@@ -259,11 +268,23 @@ all routes under /(dashboard). On callback success, redirect to /dashboard.
 Do not add any UI yet. Just the plumbing.
 ```
 
+**After Claude Code responds**
+Before accepting any file writes:
+
+1. Read every file it proposes — especially server.ts. The @supabase/ssr cookie pattern has a specific shape; make sure it's using createServerClient with cookies() from next/headers, not the old createClient pattern
+2. Check middleware.ts — the matcher should include /(dashboard)/(.\*) and exclude static assets
+3. Run npm run dev — confirm no TypeScript errors
+4. Test the callback — go to /login (doesn't exist yet, so just hit /auth/callback directly or check the route file looks right)
+
+Then commit before moving to Task 2:
+bashgit add . && git commit -m "feat: supabase client setup, auth middleware, callback handler
+
 ---
 
 ### Task 2 — Login Page + Dashboard Shell
 
 **Prompt for Claude Code:**
+
 ```
 Feature: Login page and dashboard shell
 Relevant docs: docs/product/user-flows.md, docs/architecture/routes.md
@@ -283,6 +304,7 @@ Keep the design clean and minimal — Tailwind + shadcn only.
 ### Task 3 — Candidate Submission (Shareable Link)
 
 **Prompt for Claude Code:**
+
 ```
 Feature: Public candidate submission form
 Relevant docs: docs/product/user-flows.md, docs/architecture/routes.md, docs/architecture/data-model.md
@@ -305,6 +327,7 @@ NEXT_PUBLIC_APP_URL must be used to construct the review link.
 ### Task 4 — Candidate Review Page
 
 **Prompt for Claude Code:**
+
 ```
 Feature: Public candidate review page (token-based, no login)
 Relevant docs: docs/product/user-flows.md, docs/architecture/routes.md, docs/architecture/data-model.md
@@ -327,6 +350,7 @@ Send recruiter email only if recruiter_email exists on the candidate record.
 ### Task 5 — Dashboard Candidate List + Status Filtering
 
 **Prompt for Claude Code:**
+
 ```
 Feature: Candidate list with status filter on dashboard
 Relevant docs: docs/product/mvp-scope.md, docs/architecture/routes.md
@@ -351,11 +375,13 @@ Keep design consistent with dashboard shell.
 ### Starting a session
 
 Always open these files before prompting:
+
 - `CLAUDE.md`
 - The relevant `docs/` file(s)
 - The existing file(s) you're building on
 
 In Claude Code, use `@file` references to include them in context:
+
 ```
 @CLAUDE.md @docs/product/user-flows.md
 Feature: [what you're building]
@@ -364,6 +390,7 @@ Feature: [what you're building]
 ### Prompting for feature work
 
 Use this structure every time:
+
 ```
 Feature: [name]
 Relevant docs: [list doc files]
@@ -374,18 +401,19 @@ What it should NOT do: [scope guard]
 
 ### Keeping Claude Code from drifting
 
-- If it suggests something outside scope, say: *"That's outside mvp-scope.md. Let's stay focused on [current task]."*
-- If it wants to refactor something unrelated, say: *"Note that for later. Don't change it now."*
-- If it installs a new package, ask: *"Is this necessary or can we use what's already installed?"*
+- If it suggests something outside scope, say: _"That's outside mvp-scope.md. Let's stay focused on [current task]."_
+- If it wants to refactor something unrelated, say: _"Note that for later. Don't change it now."_
+- If it installs a new package, ask: _"Is this necessary or can we use what's already installed?"_
 - After every 2–3 tasks, re-attach `CLAUDE.md` to reset context
 
 ### Reviewing changes
 
 Before accepting any change:
+
 1. Read the diff — don't just approve
 2. Check that only the intended files were modified
 3. Run the app locally and test the specific flow
-4. If something looks overengineered, ask: *"Can this be simpler?"*
+4. If something looks overengineered, ask: _"Can this be simpler?"_
 
 ### Building in slices
 
