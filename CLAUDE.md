@@ -59,6 +59,12 @@ This is an **app-first product**. It is not an AI workflow engine.
 - If scope changes, flag it and update `docs/product/mvp-scope.md`
 - Log significant decisions in `docs/execution/decisions.md`
 
+### Database migrations
+- Never edit existing migration files — they are an immutable record of what ran
+- Every schema or RLS policy change gets a new numbered file: `supabase/migrations/003_...sql`, `004_...sql`, etc.
+- Use `drop policy if exists` before recreating policies so migrations are safe to re-run
+- RLS policies must use `public.get_my_company_id()` instead of subquerying `profiles` directly — the subquery pattern causes a circular RLS bootstrap loop on the profiles table
+
 ---
 
 ## Project Structure

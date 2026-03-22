@@ -283,20 +283,27 @@ bashgit add . && git commit -m "feat: supabase client setup, auth middleware, ca
 
 ### Task 2 — Login Page + Dashboard Shell
 
+Open these files first in VS Code
+CLAUDE.md, docs/product/user-flows.md, docs/architecture/routes.md, src/types/index.ts
+
 **Prompt for Claude Code:**
 
 ```
+We're building the recruiter-collab MVP. Read CLAUDE.md, docs/product/user-flows.md, and docs/architecture/routes.md before writing any code.
+
 Feature: Login page and dashboard shell
-Relevant docs: docs/product/user-flows.md, docs/architecture/routes.md
 Files to create:
   - src/app/(auth)/login/page.tsx (magic link form using shadcn Input + Button)
-  - src/app/(dashboard)/layout.tsx (sidebar nav: Dashboard, Roles; show user email)
-  - src/app/(dashboard)/dashboard/page.tsx (server component, fetch roles with candidate counts from Supabase, display as cards)
-  - src/components/roles/RoleCard.tsx
+  - src/app/(dashboard)/layout.tsx (protected layout with simple sidebar nav: Dashboard, Roles — show logged-in user email)
+  - src/app/(dashboard)/dashboard/page.tsx (server component — fetch roles with candidate counts from Supabase, display as role cards)
+  - src/components/roles/RoleCard.tsx (shows role title, department, pending candidate count)
+  - src/app/page.tsx (root redirect — if logged in go to /dashboard, if not go to /login)
 
-Dashboard page should show role title, department, open/pending count.
-Use the seeded data. Do not build role creation UI yet.
-Keep the design clean and minimal — Tailwind + shadcn only.
+Use shadcn Button and Input components. Use Tailwind for layout.
+Dashboard page should fetch from Supabase server client using the seeded roles data.
+RoleCard should show role title, department badge, and a count of pending candidates.
+Keep design clean and minimal — no heavy chrome, no complex nav.
+Do not build role creation UI. Roles come from seeded data only.
 ```
 
 ---
