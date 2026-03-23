@@ -2,36 +2,41 @@
 
 ---
 
-## Flow 1 — Recruiter Submits a Candidate (Shareable Link)
+## Flow 1 — Recruiter Submits a Candidate (Shareable Link) ✅ IMPLEMENTED
 
 **Actor:** External recruiter (no account required)
 **Entry point:** Shareable URL provided by hiring manager
 
 ```
 1. Hiring manager copies submission link for a role
-   → URL: /submit/[roleId]
+   → URL: /submit/[submission_token]
 
-2. Recruiter opens link in browser (no login)
-   → Sees role title, company name, submission form
+2. Recruiter opens link in browser (no login required)
+   → Server validates submission_token against roles table
+   → Sees role title, department, company name, and submission form
 
 3. Recruiter fills in:
    - Candidate full name (required)
-   - Candidate email (required)
+   - Candidate email (required, validated + lowercased server-side)
    - LinkedIn URL (optional)
-   - Resume file upload (optional)
-   - Recruiter notes (optional)
+   - Recruiter name (optional)
    - Recruiter email (optional — for status updates)
+   - Notes for hiring team (optional)
+   Note: resume upload deferred to Week 2
 
-4. Recruiter submits form
-   → Candidate record created in DB (status: pending)
-   → Review token generated and stored on candidate record
-   → Email sent to hiring manager with candidate summary + review link
-   → Recruiter sees confirmation screen: "Candidate submitted successfully"
+4. Recruiter submits form → POST /api/submit/[token]
+   → Token re-validated server-side
+   → role_id and company_id derived from matched role (client cannot supply these)
+   → Candidate record created (status: pending, review_token DB-generated)
+   → Email sent to hiring manager via Resend (best-effort, non-blocking)
+   → Confirmation message shown inline (no page redirect)
 ```
 
 **Error states:**
-- Required fields missing → inline validation, no submit
-- Role not found or closed → friendly error page
+- Required fields missing → inline validation, form not submitted
+- Invalid email format → 400, inline error message
+- Token not found → "Link not found" full-page error state
+- Role not open → "Role no longer open" full-page error state
 
 ---
 

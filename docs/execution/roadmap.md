@@ -5,46 +5,58 @@
 ## Milestones
 
 ### Milestone 0 — Workspace Setup (Day 1, ~2 hours)
+
 - [ ] Repo initialized with Next.js + TypeScript + Tailwind
-- [ ] shadcn/ui installed and configured
-- [ ] Supabase project created
-- [ ] Migration run, seed data loaded
-- [ ] Resend account created, API key in env
-- [ ] `.env.local` populated
-- [ ] App runs locally at localhost:3000
-- [ ] Vercel project connected to repo
+- [x] shadcn/ui installed and configured
+- [x] Supabase project created
+- [x] Migration run, seed data loaded
+- [x] Resend account created, API key in env
+- [x] `.env.local` populated
+- [x] App runs locally at localhost:3000
+- [x] Vercel project connected to repo
 
 ---
 
-### Milestone 1 — Auth + Dashboard Shell (Day 1–2)
+### Milestone 1 — Auth + Dashboard Shell ✅ COMPLETE
+
 **Goal:** Hiring manager can log in and see the dashboard
 
-- [ ] `/login` page with magic link form
-- [ ] Supabase auth callback handler
-- [ ] Protected dashboard layout (middleware redirect)
-- [ ] `/dashboard` — list of roles with candidate counts
-- [ ] Supabase server client utility
-- [ ] Profile fetched on login, stored in session
+- [x] `/login` page with magic link form
+- [x] Supabase auth callback handler
+- [x] Protected dashboard layout (proxy redirect)
+- [x] `/dashboard` — list of roles with candidate counts
+- [x] Supabase server client utility
+- [x] Profile fetched on each dashboard load (per-request, no session cache — acceptable for MVP)
 
 **Demo test:** Enter email → receive magic link → land on dashboard → see seeded roles
 
 ---
 
-### Milestone 2 — Candidate Submission (Day 2–3)
+### Milestone 2 — Candidate Submission ✅ COMPLETE
+
 **Goal:** Recruiter can submit a candidate using a shareable link
 
-- [ ] `/submit/[token]` — role lookup by submission_token
-- [ ] Submission form component (name, email, LinkedIn, notes, recruiter email)
-- [ ] Resume file upload to Supabase Storage (optional field)
-- [ ] POST `/api/submit/[token]` — validates role, creates candidate, generates review_token
-- [ ] Success confirmation screen
-- [ ] Email sent to hiring manager on submission (Resend)
+- [x] `/submit/[token]` — role lookup by submission_token, friendly error states for invalid/closed
+- [x] Submission form component (name, email, LinkedIn, notes, recruiter name/email)
+- [ ] ~~Resume file upload~~ — deferred to Week 2
+- [x] POST `/api/submit/[token]` — validates role, creates candidate, review_token DB-generated
+- [x] Success confirmation screen (inline, no redirect)
+- [x] Email sent to hiring manager on submission (Resend, best-effort)
+
+**Known limitations (MVP tradeoffs):**
+
+- Hiring manager lookup is first-match by company_id + role = 'hiring_manager'
+- Email send is best-effort and does not block or fail the submission response
+- API route uses service role client (bypasses RLS); token validation is the security boundary
+- Submit page uses non-admin client for role lookup, admin client only for company name display
+- No rate limiting or spam protection
 
 **Demo test:** Open submission link → fill form → submit → candidate appears in dashboard
 
 ---
 
 ### Milestone 3 — Candidate Review (Day 3–4)
+
 **Goal:** Hiring manager can review and decide on a candidate
 
 - [ ] `/review/[token]` — public page, candidate lookup by review_token
@@ -60,6 +72,7 @@
 ---
 
 ### Milestone 4 — Dashboard Polish (Day 4–5)
+
 **Goal:** Dashboard is demo-ready
 
 - [ ] `/candidates/[id]` — full candidate profile with decision history
@@ -74,6 +87,7 @@
 ---
 
 ### Milestone 5 — Deployment (Day 5–6)
+
 **Goal:** Live URL that can be sent to pilot customers
 
 - [ ] Vercel deployment configured
@@ -85,6 +99,7 @@
 ---
 
 ### Milestone 6 — Week 2 (if Week 1 complete)
+
 - [ ] Google OAuth (Supabase built-in, ~2 hours)
 - [ ] Recruiter web form with login
 - [ ] Role creation UI

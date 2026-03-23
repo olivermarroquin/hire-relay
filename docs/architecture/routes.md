@@ -13,9 +13,9 @@
 | `/candidates/[id]` | Required (HM) | Full candidate profile + decision UI |
 | `/roles` | Required (HM) | Role list + copy submission link |
 | `/review/[token]` | None | Public candidate review (secure token) |
-| `/submit/[roleId]` | None | Public candidate submission form |
+| `/submit/[token]` | None | Public candidate submission form |
 
-**Note:** `roleId` in `/submit/[roleId]` is actually the `submission_token` from the `roles` table (a UUID). This is safe to expose publicly.
+**Note:** `token` in `/submit/[token]` is the `submission_token` from the `roles` table (a UUID). Safe to expose publicly. Invalid token → "Link not found" state. Closed role → "Role no longer open" state.
 
 ---
 
@@ -41,8 +41,18 @@
 
 | Method | Route | Auth | Purpose |
 |---|---|---|---|
-| GET | `/api/submit/[token]` | None | Get role info by submission_token (for form) |
+| GET | `/api/submit/[token]` | None | Not implemented — page fetches role directly in server component |
 | POST | `/api/submit/[token]` | None | Submit candidate against role |
+
+**POST `/api/submit/[token]` details:**
+- Validates `submission_token` against `roles` table; returns 404 if not found, 400 if role not open
+- Validates required fields: `full_name`, `email` (format-checked, lowercased)
+- Normalizes `recruiter_email` (lowercased, format-checked if provided)
+- Derives `role_id` and `company_id` server-side from matched role — not accepted from client
+- `review_token` is DB-generated (uuid default), not supplied by client
+- After insert, sends Resend notification to hiring manager (best-effort, non-blocking)
+- Response: `{ success: true, candidateId: string }`
+- Uses service role client (RLS bypassed); token validation is the security boundary
 
 ### Review
 

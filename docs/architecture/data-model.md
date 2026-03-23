@@ -113,7 +113,7 @@ The current status on `candidates.status` is the source of truth for display. `d
 | roles | Users can only CRUD roles in their company |
 | candidates | Users can only read/write candidates where company_id matches |
 | decisions | Users can only read/write decisions for candidates in their company |
-| candidates (insert) | Anyone can insert if role's submission_token matches — no auth required |
+| candidates (insert) | Anyone can insert — no auth required; API route uses service role, token validation is the boundary |
 | candidates (select by token) | Anyone can select a single candidate by review_token — no auth required |
 
 ---
@@ -123,6 +123,22 @@ The current status on `candidates.status` is the source of truth for display. `d
 | Bucket | Access | Purpose |
 |---|---|---|
 | resumes | Private (signed URLs) | Resume file uploads from submission form |
+
+---
+
+## Submission flow — field sourcing
+
+When a candidate is inserted via `POST /api/submit/[token]`:
+
+| Field | Source |
+|---|---|
+| `role_id` | Derived server-side from role matched by `submission_token` |
+| `company_id` | Derived server-side from same role — client cannot control tenant |
+| `status` | Always `'pending'` on insert |
+| `review_token` | DB default (`gen_random_uuid()`) — not client-supplied |
+| `full_name`, `email`, `linkedin_url` | Client-provided, validated and normalized server-side |
+| `recruiter_name`, `recruiter_email`, `recruiter_notes` | Client-provided, optional |
+| `submitted_by` | `null` for shareable link submissions (no auth) |
 
 ---
 
