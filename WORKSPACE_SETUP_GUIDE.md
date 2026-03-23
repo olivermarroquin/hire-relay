@@ -310,23 +310,124 @@ Do not build role creation UI. Roles come from seeded data only.
 
 ### Task 3 — Candidate Submission (Shareable Link)
 
+Resend Curl Test:
+curl -X POST https://api.resend.com/emails \
+ -H "Authorization: Bearer re_gkrwWnR8_Mexw8kDNgHQJpC7FHtiyMF3X" \
+ -H "Content-Type: application/json" \
+ -H "User-Agent: recruiter-collab-mvp/1.0" \
+ -d '{
+"from": "Test <onboarding@resend.dev>",
+"to": ["oliver.marroquin31217@gmail.com"],
+"subject": "Test",
+"html": "<p>Resend works</p>"
+}'
+
 **Prompt for Claude Code:**
 
 ```
-Feature: Public candidate submission form
-Relevant docs: docs/product/user-flows.md, docs/architecture/routes.md, docs/architecture/data-model.md
-Files to create:
-  - src/app/submit/[token]/page.tsx (server component, lookup role by submission_token)
-  - src/components/submit/SubmitForm.tsx (client component with form fields)
-  - src/app/api/submit/[token]/route.ts (POST handler: validate role, create candidate, trigger email)
-  - src/lib/email/resend.ts (sendSubmissionNotification function)
+We're building the recruiter-collab MVP. Before writing code, read:
+- CLAUDE.md
+- docs/product/user-flows.md
+- docs/architecture/data-model.md
+- docs/architecture/routes.md
+- src/types/index.ts
 
-Form fields: full_name (required), email (required), linkedin_url (optional),
-recruiter_notes (optional), recruiter_email (optional), recruiter_name (optional).
-No file upload yet — skip resume for now.
-On success: show confirmation message.
-Email to hiring manager must include: candidate name, role, review link (/review/[review_token]).
-NEXT_PUBLIC_APP_URL must be used to construct the review link.
+Feature: Public candidate submission form (shareable link flow)
+
+Important constraints:
+- This flow is intentionally PUBLIC: no auth required
+- Do NOT add auth/session checks to the submit page or submit API route
+- Do NOT trust any client-provided company_id or role_id
+- company_id and role_id must be derived server-side from the role matched by submission_token
+- Validate submission_token on the server before rendering the form, and again in the POST handler
+- Do NOT weaken or bypass existing RLS policies
+- Keep this as a simple MVP vertical slice; do not add resume upload yet
+- Use existing types from src/types/index.ts; do not redefine duplicate types
+- Prefer the simplest correct implementation over extra abstractions
+
+Files to create:
+
+1) src/app/submit/[token]/page.tsx
+- Server component
+- Read token from params
+- Query roles table by submission_token
+- If role not found or role.status !== 'open', render a friendly error state
+- If found, render basic role info and pass only the minimum required role data into SubmitForm
+- This page must remain publicly accessible
+
+2) src/components/submit/SubmitForm.tsx
+- Client component
+- Fields:
+  - full_name (required)
+  - email (required)
+  - linkedin_url (optional)
+  - recruiter_notes (optional, textarea)
+  - recruiter_name (optional)
+  - recruiter_email (optional)
+- On submit, POST JSON to /api/submit/[token]
+- On success, replace the form inline with a confirmation message
+- On error, show an inline error message
+- Do not send company_id, role_id, or review_token from the client
+
+3) src/app/api/submit/[token]/route.ts
+- Public POST handler
+- Steps:
+  1. Read token from route params
+  2. Look up role by submission_token
+  3. If not found or not open, return 404 or 400 with safe JSON error
+  4. Validate required request body fields
+  5. Insert candidate using:
+     - company_id from the matched role
+     - role_id from the matched role
+     - status: 'pending'
+     - recruiter_name / recruiter_email / recruiter_notes from request body
+     - full_name / email / linkedin_url from request body
+  6. Do not accept company_id or role_id from request body
+  7. review_token should come from DB default generation
+  8. After insert, fetch/return the inserted row including review_token
+  9. Call sendSubmissionNotification()
+  10. Return { success: true }
+
+4) src/lib/email/resend.ts
+- Use the Resend SDK
+- Use RESEND_API_KEY and RESEND_FROM_EMAIL from env
+- Implement:
+  - sendSubmissionNotification({ candidateName, roleTitle, companyName, recruiterName, recruiterNotes, reviewToken, hiringManagerEmail })
+    - sends email to hiring manager
+    - review link = APP URL + '/review/' + reviewToken
+    - subject: "New candidate for review: [candidateName] — [roleTitle]"
+    - body: concise candidate summary + clear review link
+  - sendDecisionNotification(...) as a placeholder for Task 4
+
+Environment notes:
+- Use RESEND_API_KEY
+- Use RESEND_FROM_EMAIL
+- Use app base URL from env for review links
+- Avoid using NEXT_PUBLIC_* unless the value truly needs to be exposed to the browser
+
+Implementation rules:
+- Do not add styling libraries or form libraries
+- Do not add resume upload
+- Do not add extra abstractions unless necessary
+- Keep error handling simple and explicit
+- If an insert is blocked by RLS, stop and explain exactly why before changing policies
+- Do not silently switch to insecure patterns
+
+What to verify after each file:
+1. TypeScript compiles
+2. Public submit page loads with a valid token
+3. Invalid token shows friendly error state
+4. Form submits successfully
+5. Candidate row is inserted with correct company_id and role_id
+6. review_token exists on inserted row
+7. Confirmation message appears inline
+8. Email send is attempted after successful insert
+
+After coding, give me:
+- a summary of what changed
+- any RLS issues encountered
+- exact manual test steps
+- any env vars I still need to set
 ```
 
 ---
