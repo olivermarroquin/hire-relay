@@ -7,12 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useSate("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SubmitEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -38,10 +38,13 @@ export default function LoginPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50">
         <div className="w-full max-w-sm space-y-2 rounded-xl border border-zinc-200 bg-white p-8 shadow-sm">
-          <h1 className="text-lg font-semibold text-zinc-900">Check your email</h1>
+          <h1 className="text-lg font-semibold text-zinc-900">
+            Check your email
+          </h1>
           <p className="text-sm text-zinc-500">
-            We sent a magic link to <span className="font-medium text-zinc-700">{email}</span>.
-            Click it to sign in.
+            We sent a magic link to{" "}
+            <span className="font-medium text-zinc-700">{email}</span>. Click it
+            to sign in.
           </p>
         </div>
       </div>
@@ -53,7 +56,9 @@ export default function LoginPage() {
       <div className="w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-8 shadow-sm">
         <div className="mb-6 space-y-1">
           <h1 className="text-xl font-semibold text-zinc-900">Sign in</h1>
-          <p className="text-sm text-zinc-500">Enter your email to receive a magic link.</p>
+          <p className="text-sm text-zinc-500">
+            Enter your email to receive a magic link.
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
