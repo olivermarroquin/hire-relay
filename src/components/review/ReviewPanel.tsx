@@ -114,6 +114,33 @@ export function ReviewPanel({ token, candidate, role, companyName, hasResume }: 
         </div>
       )}
 
+      {/* Inline resume viewer */}
+      {hasResume && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Resume</p>
+            <a
+              href={`/api/review/${token}/resume`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-blue-600 hover:underline"
+            >
+              Open in new tab →
+            </a>
+          </div>
+          {/* The src points to our secure route, which issues a 302 to a short-lived
+              signed URL. Browsers follow redirects inside iframes, so the existing
+              route works without modification. If the PDF fails to render (rare,
+              browser-dependent), the "Open in new tab" link above is the fallback. */}
+          <iframe
+            src={`/api/review/${token}/resume`}
+            className="w-full rounded border border-zinc-200"
+            style={{ height: '800px' }}
+            title="Candidate resume"
+          />
+        </div>
+      )}
+
       {/* Current status */}
       <div className="flex items-center gap-2">
         <span className="text-xs text-zinc-500">Current status:</span>
