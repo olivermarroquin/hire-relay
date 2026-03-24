@@ -437,20 +437,189 @@ After coding, give me:
 **Prompt for Claude Code:**
 
 ```
-Feature: Public candidate review page (token-based, no login)
-Relevant docs: docs/product/user-flows.md, docs/architecture/routes.md, docs/architecture/data-model.md
-Files to create:
-  - src/app/review/[token]/page.tsx (server component, lookup candidate by review_token)
-  - src/components/review/ReviewPanel.tsx (client component with decision UI)
-  - src/app/api/review/[token]/decision/route.ts (POST: log decision, update candidate status, send recruiter email)
-  - src/lib/email/resend.ts (add sendDecisionNotification function)
+We’re building Task 4 for the recruiter-collab MVP.
 
-Review page shows: candidate name, email, LinkedIn URL, role title, recruiter notes.
-Decision buttons: Interview / Hold / Reject.
-Optional notes textarea.
-After decision: show confirmation state (do not navigate away).
-If review_token not found: show friendly error page.
-Send recruiter email only if recruiter_email exists on the candidate record.
+Before writing any code, read these files first for context:
+- CLAUDE.md
+- docs/product/user-flows.md
+- docs/architecture/data-model.md
+- docs/architecture/routes.md
+- src/types/index.ts
+- src/lib/email/resend.ts
+
+Important implementation rules:
+- Use the existing shared types from src/types/index.ts. Do not redefine duplicate types unless a real change is required in the source-of-truth type file.
+- The correct values must be:
+  - DecisionValue = 'interview' | 'hold' | 'rejected'
+  - CandidateStatus = 'pending' | 'interview' | 'hold' | 'rejected'
+- Use rejected everywhere instead of pass.
+- If anything in the codebase, UI text, helper labels, route logic, validation, or email logic still uses pass or inconsistent decision/status values, update it to the correct values above.
+- Keep this aligned across:
+  - types
+  - UI labels/buttons
+  - API validation
+  - database write logic
+  - email notification logic
+  - any status/decision mapping helpers
+- This is a PUBLIC token-based flow. Do not add auth/session checks to this route.
+- The token is the only access mechanism.
+- Do not trust any client-provided company_id, role_id, candidate_id, or user identity.
+- Do not make RLS exposure worse.
+- Do not fetch lists.
+- Do not query broadly and filter in JS.
+- Do single-row select by review_token only.
+- Fetch only the candidate identified by the review_token, plus only the related data needed for display:
+  - candidate info
+  - role title
+  - role department
+  - company name
+  - recruiter name if available
+  - recruiter notes if available
+- Do not overfetch beyond that.
+- Do not add resume display yet.
+
+Very important design rules:
+1. If a decision already exists (candidate status is not pending), still allow changing the decision from the review page.
+2. Do NOT overwrite history by editing a previous decision row.
+3. Every new decision submission should:
+   - validate review_token
+   - update candidates.status
+   - insert a NEW row into decisions
+4. This keeps decision history append-only.
+5. The POST route must be strictly server-validated:
+   - read token from URL
+   - look up candidate by review_token
+   - return 404 if not found
+   - validate decision against allowed values
+   - sanitize/normalize notes
+   - update only that matched candidate
+   - insert decision only for that matched candidate
+6. Never rely on auth-based logic in this public flow.
+
+Build in this exact order:
+
+STEP 1 — Read path first
+Create:
+- src/app/review/[token]/page.tsx
+
+Requirements:
+- Server component.
+- Look up exactly one candidate by review_token.
+- Do a narrow query only. No list fetching.
+- Join only the related role/company data needed for display.
+- If token not found, show a friendly “This link is invalid or expired” page.
+- Pass the resolved data into a client component ReviewPanel.
+- Keep this page clean and focused.
+
+STEP 2 — Review UI
+Create:
+- src/components/review/ReviewPanel.tsx
+
+Requirements:
+- Client component.
+- Display:
+  - Candidate full name
+  - Candidate email
+  - LinkedIn URL if present (clickable)
+  - Role title
+  - Role department
+  - Company name
+  - Recruiter name if present
+  - Recruiter notes if present, in a clearly labeled section
+  - Current status badge using STATUS_LABELS and STATUS_COLORS from src/types/index.ts
+- Decision UI:
+  - Button: Move to Interview
+  - Button: Hold
+  - Button: Reject
+  - Optional notes textarea labeled: Internal notes (optional)
+  - Submit button
+- After successful submission:
+  - replace the action area with a confirmation state
+  - show the decision made
+  - do not navigate away
+- If status is not pending:
+  - show the current status prominently
+  - still allow changing the decision
+- Keep the design simple and MVP-clean.
+
+STEP 3 — Decision write path
+Create:
+- src/app/api/review/[token]/decision/route.ts
+
+Requirements:
+- POST handler
+- Body: { decision: DecisionValue, notes?: string }
+- Strict server behavior:
+  1. Look up candidate by review_token
+  2. Return 404 if not found
+  3. Validate decision using shared allowed values/types
+  4. Get candidate/company/role context from the matched candidate record only
+  5. Update candidate status to the validated decision value
+  6. Insert a NEW row into decisions table with:
+     - candidate_id
+     - company_id
+     - decision
+     - notes
+     - decided_by: null
+  7. If candidate.recruiter_email exists, call sendDecisionNotification()
+  8. Return JSON like:
+     - { success: true, decision, candidateName }
+- Do not accept or use any client-supplied candidate_id/company_id/role_id.
+- Do not perform broad updates.
+- Update only the candidate matched by review_token.
+
+STEP 4 — Recruiter notification email
+Edit:
+- src/lib/email/resend.ts
+
+Requirements:
+- Implement the existing placeholder for:
+  sendDecisionNotification({
+    candidateName,
+    roleTitle,
+    decision,
+    notes,
+    recruiterEmail
+  })
+- Send email to recruiter_email
+- Subject format:
+  Update on [candidateName]: [decision label]
+- Use DECISION_LABELS from src/types/index.ts for human-friendly label text
+- Email body should include:
+  - candidate name
+  - role title
+  - decision label
+  - notes if present
+- Tone should be clear, professional, and friendly because this goes to an external recruiter
+
+General coding expectations:
+- Prefer the simplest safe MVP implementation.
+- Keep components/files focused.
+- Reuse existing project patterns where possible.
+- Do not make unrelated refactors.
+- If you must change src/types/index.ts to fully enforce the correct decision/status union values, do it carefully and then update all affected references in this task.
+- Explain briefly what you changed after coding.
+
+What to verify after implementation:
+1. npm run dev has no TypeScript errors
+2. A valid review link from the submission email opens /review/[token] publicly with no login
+3. Only the correct candidate appears for that token
+4. Bad token shows a friendly invalid/expired page
+5. Submitting interview/hold/rejected updates candidates.status correctly
+6. A NEW row is inserted into decisions for each submission
+7. Reloading the page shows the latest current status
+8. Changing the decision again creates another decision row and updates candidate status again
+9. Recruiter email sends if recruiter_email is present
+10. No list queries, no broad fetching, no client-controlled tenant linkage, no data leakage
+
+Please implement in the exact build order above.
+Before editing, inspect the current code so changes match existing project conventions.
+After coding, summarize:
+- files changed
+- why each file changed
+- how token validation is enforced
+- how decision history is preserved
+- any assumptions or schema dependencies you relied on
 ```
 
 ---

@@ -9,6 +9,7 @@ You are an engineering partner helping build a focused, demoable MVP. Your prima
 ## Project Summary
 
 A lightweight recruiter collaboration app where:
+
 - External recruiters submit candidates via shareable link or web form
 - Hiring managers receive email + in-app notifications
 - Hiring managers review profiles and select: Interview / Hold / Reject
@@ -21,27 +22,29 @@ This is an **app-first product**. It is not an AI workflow engine.
 
 ## Stack
 
-| Layer | Choice |
-|---|---|
-| Framework | Next.js 14 (App Router) |
-| Language | TypeScript |
-| Database | Supabase (Postgres) |
-| Auth | Supabase Auth (magic link → Google OAuth in week 2) |
-| Styling | Tailwind CSS + shadcn/ui |
-| Email | Resend |
-| Deployment | Vercel |
+| Layer      | Choice                                              |
+| ---------- | --------------------------------------------------- |
+| Framework  | Next.js 14 (App Router)                             |
+| Language   | TypeScript                                          |
+| Database   | Supabase (Postgres)                                 |
+| Auth       | Supabase Auth (magic link → Google OAuth in week 2) |
+| Styling    | Tailwind CSS + shadcn/ui                            |
+| Email      | Resend                                              |
+| Deployment | Vercel                                              |
 
 ---
 
 ## Critical Working Rules
 
 ### Before writing any code
+
 1. Read the relevant doc file(s) in `docs/` first
 2. Identify every file you will touch before touching any of them
 3. Propose the minimal change that solves the problem
 4. State any tradeoffs clearly
 
 ### While coding
+
 - Build one vertical slice at a time (route → API → DB → UI)
 - Prefer editing existing patterns over creating new ones
 - Do not add abstractions that aren't immediately needed
@@ -50,16 +53,19 @@ This is an **app-first product**. It is not an AI workflow engine.
 - Use TypeScript types from `src/types/index.ts` — extend them, don't duplicate
 
 ### Scope discipline
+
 - If a request is outside `docs/product/mvp-scope.md`, say so explicitly before proceeding
 - Never gold-plate. Ask: "is this needed for the demo?"
 - If you're unsure whether something is in scope, ask before building it
 
 ### Docs alignment
+
 - If a decision changes the data model, update `docs/architecture/data-model.md`
 - If scope changes, flag it and update `docs/product/mvp-scope.md`
 - Log significant decisions in `docs/execution/decisions.md`
 
 ### Database migrations
+
 - Never edit existing migration files — they are an immutable record of what ran
 - Every schema or RLS policy change gets a new numbered file: `supabase/migrations/003_...sql`, `004_...sql`, etc.
 - Use `drop policy if exists` before recreating policies so migrations are safe to re-run
@@ -130,10 +136,10 @@ docs/
 
 ## Email Events (via Resend)
 
-| Trigger | Recipient | Template |
-|---|---|---|
-| Candidate submitted | Hiring manager | "New candidate ready for review" + review link |
-| Decision made | Recruiter (if email provided) | "Status update: [name] → [decision]" |
+| Trigger             | Recipient                     | Template                                       |
+| ------------------- | ----------------------------- | ---------------------------------------------- |
+| Candidate submitted | Hiring manager                | "New candidate ready for review" + review link |
+| Decision made       | Recruiter (if email provided) | "Status update: [name] → [decision]"           |
 
 ---
 
@@ -150,6 +156,7 @@ What it should NOT do: [scope boundary]
 ```
 
 For bug fixes:
+
 ```
 Bug: [what's broken]
 File: [where]

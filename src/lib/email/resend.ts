@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { DECISION_LABELS, type DecisionValue } from "@/types";
 
 if (!process.env.RESEND_API_KEY) throw new Error("Missing RESEND_API_KEY");
 if (!process.env.RESEND_FROM_EMAIL) throw new Error("Missing RESEND_FROM_EMAIL");
@@ -60,33 +61,34 @@ export async function sendSubmissionNotification({
 }
 
 // ─────────────────────────────────────────
-// Milestone 3: Decision made (placeholder)
+// Milestone 3: Decision made
 // ─────────────────────────────────────────
 export async function sendDecisionNotification({
   candidateName,
+  roleTitle,
   decision,
   notes,
   recruiterEmail,
 }: {
   candidateName: string;
-  decision: string;
+  roleTitle: string;
+  decision: DecisionValue;
   notes: string | null;
   recruiterEmail: string;
 }) {
-  const decisionLabel =
-    decision === "interview"
-      ? "move forward to interview"
-      : decision === "hold"
-        ? "place on hold"
-        : "pass at this time";
+  const decisionLabel = DECISION_LABELS[decision];
+  const safeName = escapeHtml(candidateName);
+  const safeRole = escapeHtml(roleTitle);
 
   await resend.emails.send({
     from: FROM,
     to: recruiterEmail,
-    subject: `Update on ${candidateName}`,
+    subject: `Update on ${candidateName}: ${decisionLabel}`,
     html: `
-      <p>The hiring team has reviewed <strong>${escapeHtml(candidateName)}</strong> and decided to <strong>${decisionLabel}</strong>.</p>
-      ${notes ? `<p style="color:#374151">${escapeHtml(notes)}</p>` : ""}
+      <p>The hiring team has reviewed <strong>${safeName}</strong> for <strong>${safeRole}</strong>.</p>
+      <p>Decision: <strong>${decisionLabel}</strong></p>
+      ${notes ? `<p style="color:#374151;margin-top:12px">${escapeHtml(notes)}</p>` : ""}
+      <p style="color:#9ca3af;font-size:12px;margin-top:16px">You received this email because you submitted this candidate. No action is required.</p>
     `,
   });
 }
