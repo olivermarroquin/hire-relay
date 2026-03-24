@@ -6,13 +6,15 @@ interface Props {
   params: Promise<{ token: string }>
 }
 
-// Only the fields needed for rendering — no id, review_token, or recruiter_email
+// Only the fields needed for rendering — no id, review_token, or recruiter_email.
+// resume_url is fetched to derive the has_resume boolean but is never forwarded to the client.
 interface CandidateRow {
   full_name: string
   email: string
   linkedin_url: string | null
   recruiter_name: string | null
   recruiter_notes: string | null
+  resume_url: string | null
   status: CandidateStatus
   company_id: string
   roles: { title: string; department: string | null } | null
@@ -27,7 +29,7 @@ export default async function ReviewPage({ params }: Props) {
 
   const { data, error } = await supabase
     .from('candidates')
-    .select('full_name, email, linkedin_url, recruiter_name, recruiter_notes, status, company_id, roles(title, department)')
+    .select('full_name, email, linkedin_url, recruiter_name, recruiter_notes, resume_url, status, company_id, roles(title, department)')
     .eq('review_token', token)
     .single()
 
@@ -72,6 +74,7 @@ export default async function ReviewPage({ params }: Props) {
           }}
           role={candidate.roles!}
           companyName={company?.name ?? 'Hiring'}
+          hasResume={!!candidate.resume_url}
         />
       </div>
     </div>

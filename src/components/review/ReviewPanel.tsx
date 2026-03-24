@@ -26,11 +26,12 @@ interface ReviewPanelProps {
   candidate: CandidateProp
   role: { title: string; department: string | null }
   companyName: string
+  hasResume: boolean
 }
 
 const DECISIONS: DecisionValue[] = ['interview', 'hold', 'rejected']
 
-export function ReviewPanel({ token, candidate, role, companyName }: ReviewPanelProps) {
+export function ReviewPanel({ token, candidate, role, companyName, hasResume }: ReviewPanelProps) {
   const [status, setStatus] = useState<CandidateStatus>(candidate.status)
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
@@ -74,6 +75,16 @@ export function ReviewPanel({ token, candidate, role, companyName }: ReviewPanel
             className="inline-block text-sm text-blue-600 hover:underline"
           >
             LinkedIn profile →
+          </a>
+        )}
+        {hasResume && (
+          <a
+            href={`/api/review/${token}/resume`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block text-sm text-blue-600 hover:underline"
+          >
+            View resume →
           </a>
         )}
       </div>

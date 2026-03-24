@@ -5,15 +5,23 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import type { SubmitCandidatePayload } from '@/types'
 
 interface SubmitFormProps {
   token: string
   roleTitle: string
 }
 
+interface Fields {
+  full_name: string
+  email: string
+  linkedin_url: string
+  recruiter_notes: string
+  recruiter_name: string
+  recruiter_email: string
+}
+
 export function SubmitForm({ token, roleTitle }: SubmitFormProps) {
-  const [fields, setFields] = useState<SubmitCandidatePayload>({
+  const [fields, setFields] = useState<Fields>({
     full_name: '',
     email: '',
     linkedin_url: '',
@@ -21,11 +29,12 @@ export function SubmitForm({ token, roleTitle }: SubmitFormProps) {
     recruiter_name: '',
     recruiter_email: '',
   })
+  const [resumeFile, setResumeFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  function set(key: keyof SubmitCandidatePayload, value: string) {
+  function set(key: keyof Fields, value: string) {
     setFields((prev) => ({ ...prev, [key]: value }))
   }
 
@@ -34,10 +43,19 @@ export function SubmitForm({ token, roleTitle }: SubmitFormProps) {
     setLoading(true)
     setError(null)
 
+    // Build FormData so we can include the file alongside text fields.
+    // The server performs all real validation — the accept attribute is a UI hint only.
+    const formData = new FormData()
+    Object.entries(fields).forEach(([key, value]) => {
+      if (value.trim()) formData.append(key, value)
+    })
+    if (resumeFile) {
+      formData.append('resume', resumeFile)
+    }
+
     const res = await fetch(`/api/submit/${token}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(fields),
+      body: formData,
     })
 
     if (res.ok) {
@@ -102,6 +120,19 @@ export function SubmitForm({ token, roleTitle }: SubmitFormProps) {
             placeholder="https://linkedin.com/in/..."
             value={fields.linkedin_url}
             onChange={(e) => set('linkedin_url', e.target.value)}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="resume">
+            Resume{' '}
+            <span className="font-normal text-zinc-400">(PDF only, max 5 MB)</span>
+          </Label>
+          <Input
+            id="resume"
+            type="file"
+            accept=".pdf,application/pdf"
+            onChange={(e) => setResumeFile(e.target.files?.[0] ?? null)}
           />
         </div>
       </div>
