@@ -77,7 +77,7 @@ Submitted against a role. Can come from shareable link or (later) authenticated 
 | full_name | text | Required |
 | email | text | Required |
 | linkedin_url | text | Optional |
-| resume_url | text | Supabase Storage URL, optional |
+| resume_url | text | Supabase Storage object path (e.g. `{candidate_id}/resume.pdf`), optional. Never a URL — signed URLs are generated on demand at read time. |
 | recruiter_notes | text | Optional |
 | recruiter_email | text | Optional — for status notifications |
 | recruiter_name | text | Optional |
@@ -138,13 +138,20 @@ When a candidate is inserted via `POST /api/submit/[token]`:
 | `review_token` | DB default (`gen_random_uuid()`) — not client-supplied |
 | `full_name`, `email`, `linkedin_url` | Client-provided, validated and normalized server-side |
 | `recruiter_name`, `recruiter_email`, `recruiter_notes` | Client-provided, optional |
+| `resume_url` | Set server-side after storage upload (path: `{candidate_id}/resume.pdf`). Null if no file provided. Never client-supplied. |
 | `submitted_by` | `null` for shareable link submissions (no auth) |
 
 ---
 
-## Migration File
+## Migration Files
 
-See `supabase/migrations/001_initial_schema.sql`
+| File | Purpose |
+|---|---|
+| `supabase/migrations/001_initial_schema.sql` | Initial tables, RLS policies, storage bucket |
+| `supabase/migrations/002_fix_rls_policies.sql` | Fixes circular RLS bootstrap on profiles; adds `public.get_my_company_id()` security definer function; rewrites all company-scoped policies to use it |
+| `supabase/migrations/003_review_decision_function.sql` | Adds `public.apply_candidate_review_decision()` plpgsql function — atomically updates `candidates.status` and inserts a `decisions` row in one transaction |
+
+Run migrations in order. Never edit existing migration files.
 
 ## Seed File
 

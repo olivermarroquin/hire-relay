@@ -60,19 +60,22 @@ Recruiter submits candidate via shareable link → Hiring manager receives email
 │
 ├── supabase/
 │   ├── migrations/
-│   │   └── 001_initial_schema.sql   ← Full schema + RLS policies
-│   └── seed.sql                     ← Demo companies + users
+│   │   ├── 001_initial_schema.sql          ← Full schema + RLS policies + storage bucket
+│   │   ├── 002_fix_rls_policies.sql        ← get_my_company_id() + rewritten company-scoped policies
+│   │   └── 003_review_decision_function.sql ← apply_candidate_review_decision() plpgsql RPC
+│   └── seed.sql                            ← Demo companies + users
 │
 ├── src/
-│   ├── middleware.ts                 ← Auth protection for dashboard routes
+│   ├── proxy.ts                     ← Auth protection for dashboard routes (Next.js 16 convention)
 │   ├── types/
 │   │   └── index.ts                 ← All shared TypeScript types
 │   │
 │   ├── app/
 │   │   ├── layout.tsx               ← Root layout
 │   │   ├── page.tsx                 ← Root redirect
-│   │   ├── (auth)/
-│   │   │   ├── login/page.tsx       ← Magic link login
+│   │   ├── login/
+│   │   │   └── page.tsx             ← Magic link login
+│   │   ├── auth/
 │   │   │   └── callback/route.ts    ← Supabase auth callback
 │   │   ├── (dashboard)/
 │   │   │   ├── layout.tsx           ← Protected layout + nav
@@ -92,8 +95,8 @@ Recruiter submits candidate via shareable link → Hiring manager receives email
 │   │       ├── roles/route.ts
 │   │       ├── submit/[token]/route.ts
 │   │       └── review/[token]/
-│   │           ├── route.ts
-│   │           └── decision/route.ts
+│   │           ├── decision/route.ts
+│   │           └── resume/route.ts  ← Validates review_token, redirects to signed storage URL
 │   │
 │   ├── components/
 │   │   ├── ui/                      ← shadcn components (don't edit)
@@ -120,6 +123,8 @@ Recruiter submits candidate via shareable link → Hiring manager receives email
 ---
 
 ## D. Step-by-Step Bootstrap Plan
+
+> **Note:** This section is for reference and new-environment setup only. The project already exists and these steps have been completed. If you are recreating the environment (new machine, new Supabase project, etc.), follow Phases 5–7 and skip Phase 1–4.
 
 ### Phase 1 — Create the project (Terminal)
 
@@ -204,13 +209,16 @@ cp .env.local.example .env.local
 # - SUPABASE_SERVICE_ROLE_KEY
 # - RESEND_API_KEY
 # - RESEND_FROM_EMAIL
-# - NEXT_PUBLIC_APP_URL=http://localhost:3000
+# - APP_URL=http://localhost:3000   ← server-only, used for email review links
 ```
 
 ### Phase 6 — Set up Supabase
 
 1. Create project at supabase.com
-2. Go to **SQL Editor** → run `supabase/migrations/001_initial_schema.sql`
+2. Go to **SQL Editor** → run migrations **in order**:
+   - `supabase/migrations/001_initial_schema.sql`
+   - `supabase/migrations/002_fix_rls_policies.sql`
+   - `supabase/migrations/003_review_decision_function.sql`
 3. Go to **Authentication > Users** → create two users:
    - `hm@demo-acme.com`
    - `hm@demo-vertex.com`
@@ -240,9 +248,11 @@ git push -u origin main
 
 ---
 
-## E. First 5 Implementation Tasks for Claude Code
+## E. Implementation Tasks for Claude Code
 
-### Task 1 — Supabase Clients + Auth Callback
+> **Current status (2026-03-24):** Tasks 1–4 are complete. Tasks 1–4 below are preserved as reference for the decisions and constraints they document. **Task 5 is the next active task.**
+
+### Task 1 — Supabase Clients + Auth Callback ✅ COMPLETE
 
 Before you paste the prompt, do this:
 
@@ -281,7 +291,7 @@ bashgit add . && git commit -m "feat: supabase client setup, auth middleware, ca
 
 ---
 
-### Task 2 — Login Page + Dashboard Shell
+### Task 2 — Login Page + Dashboard Shell ✅ COMPLETE
 
 Open these files first in VS Code
 CLAUDE.md, docs/product/user-flows.md, docs/architecture/routes.md, src/types/index.ts
@@ -308,7 +318,7 @@ Do not build role creation UI. Roles come from seeded data only.
 
 ---
 
-### Task 3 — Candidate Submission (Shareable Link)
+### Task 3 — Candidate Submission (Shareable Link) ✅ COMPLETE
 
 Resend Curl Test:
 curl -X POST https://api.resend.com/emails \
@@ -432,7 +442,7 @@ After coding, give me:
 
 ---
 
-### Task 4 — Candidate Review Page
+### Task 4 — Candidate Review Page ✅ COMPLETE (includes resume upload + inline viewer)
 
 **Prompt for Claude Code:**
 
@@ -624,7 +634,7 @@ After coding, summarize:
 
 ---
 
-### Task 5 — Dashboard Candidate List + Status Filtering
+### Task 5 — Dashboard Candidate List + Status Filtering ← NEXT ACTIVE TASK
 
 **Prompt for Claude Code:**
 

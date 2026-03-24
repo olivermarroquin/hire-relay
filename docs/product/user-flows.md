@@ -19,15 +19,18 @@
    - Candidate full name (required)
    - Candidate email (required, validated + lowercased server-side)
    - LinkedIn URL (optional)
+   - Resume PDF (optional — max 5 MB, PDF only, validated server-side)
    - Recruiter name (optional)
    - Recruiter email (optional — for status updates)
    - Notes for hiring team (optional)
-   Note: resume upload deferred to Week 2
 
-4. Recruiter submits form → POST /api/submit/[token]
+4. Recruiter submits form → POST /api/submit/[token] (multipart/form-data)
    → Token re-validated server-side
    → role_id and company_id derived from matched role (client cannot supply these)
    → Candidate record created (status: pending, review_token DB-generated)
+   → If resume provided: uploaded to private Supabase Storage bucket; storage path
+     written to candidates.resume_url. If upload fails, candidate row is deleted
+     and an error is returned (no half-broken records left behind).
    → Email sent to hiring manager via Resend (best-effort, non-blocking)
    → Confirmation message shown inline (no page redirect)
 ```
@@ -53,7 +56,7 @@
 2. Hiring manager clicks link (no login required)
    → Sees full candidate profile:
      - Name, email, LinkedIn
-     - Resume (if uploaded)
+     - Resume inline viewer + "Open in new tab" fallback (if resume uploaded)
      - Recruiter notes
      - Role and company context
 
@@ -64,10 +67,11 @@
 
 4. (Optional) Hiring manager adds internal notes
 
-5. Hiring manager clicks "Submit Decision"
-   → Decision logged to decisions table
-   → Candidate status updated
-   → If recruiter email was provided: notification email sent
+5. Hiring manager clicks decision button
+   → Single DB function (apply_candidate_review_decision) atomically:
+     - Updates candidates.status
+     - Inserts a new row in decisions (append-only)
+   → If recruiter email was provided: notification email sent (best-effort)
    → Confirmation shown: "Decision recorded"
 ```
 
@@ -113,7 +117,7 @@
 1. Hiring manager submits decision on candidate
 2. System checks: does candidate record have a recruiter_email?
 3. If yes → send status email:
-   "Update on [Candidate Name]: The team has decided to [Interview / Hold / Pass]"
+   "Update on [Candidate Name]: The team has decided to [Interview / Hold / Reject]"
    Optional notes included if hiring manager added them
 
 4. Recruiter has no further action required in this flow

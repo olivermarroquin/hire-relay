@@ -56,4 +56,40 @@ A running record of key architectural and product decisions made during the buil
 
 ---
 
+### [2026-03-24] — RLS circular bootstrap fix via security definer function
+**Decision:** Replace all `company_id in (select company_id from profiles where id = auth.uid())` subquery patterns with a `public.get_my_company_id()` security definer function
+**Rationale:** The subquery pattern is self-referential on the profiles table — evaluating the profiles RLS policy requires reading profiles, which requires the policy, causing an infinite loop and returning no rows. The security definer function bypasses RLS to read the caller's own profile row safely.
+**Alternatives considered:** Storing company_id in the JWT (requires custom claims setup, more complexity)
+**Impact:** All company-scoped RLS policies use `get_my_company_id()`. New policies must follow this pattern. Documented in CLAUDE.md under database migration rules.
+
+---
+
+### [2026-03-24] — Transactional decision write path via plpgsql function
+**Decision:** Replace separate `candidates.update()` + `decisions.insert()` calls in the decision API route with a single `apply_candidate_review_decision()` RPC call
+**Rationale:** The two-step approach could leave `candidates.status` updated but no corresponding `decisions` row inserted (or vice versa) if anything failed between the two calls. A single plpgsql function executes both inside one transaction with a `FOR UPDATE` row lock to prevent concurrent interleaving.
+**Alternatives considered:** DB transaction via Supabase (not directly supported in the JS client without a custom function), accepting the non-atomic risk (ruled out — decisions table is the audit log)
+**Impact:** `supabase/migrations/003_review_decision_function.sql`. API route uses `supabase.rpc()`. The function also returns candidate/role data needed for the recruiter notification, removing the separate role lookup.
+
+---
+
+### [2026-03-24] — Store storage object path in resume_url, not a URL
+**Decision:** `candidates.resume_url` holds the Supabase Storage object path (e.g. `{candidate_id}/resume.pdf`), not a signed URL or public URL
+**Rationale:** Signed URLs expire. Storing a signed URL in the DB would silently go stale. Storing the path and generating signed URLs on demand at read time ensures they are always fresh.
+**Alternatives considered:** Public URL (requires public bucket — unacceptable for private resumes), pre-signed URL stored in DB (stale after expiry)
+**Impact:** `GET /api/review/[token]/resume` calls `createSignedUrl()` on every request. Raw storage path is never sent to the client.
+
+---
+
+### [2026-03-24] — PDF only for resume upload (not doc/docx)
+**Decision:** Resume upload accepts PDF only (MIME: `application/pdf`, max 5 MB)
+**Rationale:** Browsers natively render PDFs in iframes and new tabs. doc/docx files trigger a download instead of inline display, which would break the review page's inline viewer without adding an external conversion dependency. Server-side MIME validation prevents bypassing the restriction via a renamed file.
+**Alternatives considered:** doc/docx support (requires conversion service or native viewer — out of MVP scope), no file type restriction (security and UX risk)
+**Impact:** Submit form shows "PDF only, max 5 MB". Server rejects non-PDF MIME types with 400. File input uses `accept=".pdf,application/pdf"` as a UI hint only.
+
+### [2026-03-24] — Inline PDF viewer on review page via iframe + secure route
+**Decision:** Render resume inline on `/review/[token]` using an `<iframe src="/api/review/[token]/resume">` rather than a link-only approach or an embedded PDF library
+**Rationale:** The secure route already issues a 302 redirect to a signed URL; browsers follow redirects transparently inside iframes and render PDFs natively. This adds no dependencies and no code beyond the iframe tag. A "Open in new tab" fallback link handles browsers without native PDF rendering.
+**Alternatives considered:** Simple link only (worse HM UX — requires navigation away from the decision area), PDF.js or react-pdf (external dependency, overkill for MVP), streaming file through server (more complexity, no benefit over iframe+redirect for this use case)
+**Impact:** ReviewPanel renders `<iframe>` when `hasResume` is true. The raw storage path and signed URL never appear in client-visible HTML — only the opaque secure route URL is in the `src` attribute.
+
 <!-- Add new decisions below as you make them -->

@@ -67,7 +67,7 @@ This is an **app-first product**. It is not an AI workflow engine.
 ### Database migrations
 
 - Never edit existing migration files — they are an immutable record of what ran
-- Every schema or RLS policy change gets a new numbered file: `supabase/migrations/003_...sql`, `004_...sql`, etc.
+- Every schema or RLS policy change gets a new numbered file: `supabase/migrations/004_...sql`, `005_...sql`, etc. (001, 002, 003 already exist)
 - Use `drop policy if exists` before recreating policies so migrations are safe to re-run
 - RLS policies must use `public.get_my_company_id()` instead of subquerying `profiles` directly — the subquery pattern causes a circular RLS bootstrap loop on the profiles table
 
@@ -78,15 +78,19 @@ This is an **app-first product**. It is not an AI workflow engine.
 ```
 src/
   app/
-    (auth)/login/         ← magic link login page
-    (auth)/callback/      ← Supabase auth callback handler
+    login/                ← magic link login page
+    auth/callback/        ← Supabase auth callback handler
     (dashboard)/          ← protected layout for hiring managers
       dashboard/          ← HM overview: open roles + recent candidates
       candidates/[id]/    ← candidate detail view
       roles/              ← role management
     review/[token]/       ← public secure review page (no login needed)
-    submit/[roleId]/      ← public candidate submission form
-    api/                  ← all API routes
+    submit/[token]/       ← public candidate submission form
+    api/
+      submit/[token]/     ← POST: submit candidate (multipart/form-data)
+      review/[token]/
+        decision/         ← POST: submit decision via apply_candidate_review_decision RPC
+        resume/           ← GET: validate review_token, redirect to signed storage URL
   components/
     ui/                   ← shadcn components (do not modify directly)
     candidates/           ← CandidateCard, CandidateList, DecisionButtons
@@ -122,14 +126,16 @@ docs/
 - `candidates` — submitted against a role, hold review_token for secure links
 - `decisions` — append-only log of Interview/Hold/Reject decisions
 
-**Key constraint:** Every DB query must filter by `company_id`. Never return cross-company data.
+**Key constraint — authenticated dashboard queries:** Every query made by a logged-in hiring manager must filter by `company_id`. Never return cross-company data to authenticated users.
+
+**Exception — public token flows:** `/submit/[token]` and `/review/[token]` are intentionally public and token-scoped. These routes do not filter by `company_id` — the token itself is the access boundary. `submission_token` on roles and `review_token` on candidates are UUIDs (unguessable). The API routes for these flows use the admin client and validate only the token.
 
 ---
 
 ## Auth Model
 
 - Hiring managers: magic link login → dashboard
-- Recruiters (shareable link flow): no auth required — submit via `/submit/[roleId]`
+- Recruiters (shareable link flow): no auth required — submit via `/submit/[token]` (token = `roles.submission_token`)
 - Review links: `/review/[token]` — token is a UUID stored on the candidate row, no auth
 
 ---

@@ -1,7 +1,7 @@
 # MVP Scope
 
-**Last updated:** [date]
-**Status:** Active
+**Last updated:** 2026-03-24
+**Status:** Active — Milestones 1–3 + resume upload complete. Ready for Milestone 4 (Dashboard Polish).
 
 ---
 
@@ -27,8 +27,8 @@ A pilot company should be able to:
 - [x] No login required for candidate review (secure token link)
 
 ### Candidate Submission (Shareable Link)
-- [x] `/submit/[roleId]` — public submission form
-- [x] Fields: candidate name, email, LinkedIn URL, resume upload (optional), recruiter notes
+- [x] `/submit/[token]` — public submission form
+- [x] Fields: candidate name, email, LinkedIn URL, resume upload (PDF only, max 5 MB, optional), recruiter notes
 - [x] Submission creates candidate record in DB
 - [x] Submission triggers email to hiring manager
 

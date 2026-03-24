@@ -6,7 +6,7 @@
 
 ### Milestone 0 — Workspace Setup (Day 1, ~2 hours)
 
-- [ ] Repo initialized with Next.js + TypeScript + Tailwind
+- [x] Repo initialized with Next.js + TypeScript + Tailwind
 - [x] shadcn/ui installed and configured
 - [x] Supabase project created
 - [x] Migration run, seed data loaded
@@ -38,8 +38,8 @@
 
 - [x] `/submit/[token]` — role lookup by submission_token, friendly error states for invalid/closed
 - [x] Submission form component (name, email, LinkedIn, notes, recruiter name/email)
-- [ ] ~~Resume file upload~~ — deferred to Week 2
 - [x] POST `/api/submit/[token]` — validates role, creates candidate, review_token DB-generated
+- [x] Resume file upload — PDF only, max 5 MB, optional. Server validates MIME + size. Storage path written to `candidates.resume_url`. Upload failure rolls back candidate row.
 - [x] Success confirmation screen (inline, no redirect)
 - [x] Email sent to hiring manager on submission (Resend, best-effort)
 
@@ -55,19 +55,42 @@
 
 ---
 
-### Milestone 3 — Candidate Review (Day 3–4)
+### Milestone 3 — Candidate Review ✅ COMPLETE
 
 **Goal:** Hiring manager can review and decide on a candidate
 
-- [ ] `/review/[token]` — public page, candidate lookup by review_token
-- [ ] Candidate profile display (name, email, LinkedIn, notes, resume link)
-- [ ] Decision buttons: Interview / Hold / Reject
-- [ ] Optional notes field
-- [ ] POST `/api/review/[token]/decision` — logs decision, updates status
-- [ ] Confirmation state after decision
-- [ ] Email sent to recruiter if recruiter_email exists (Resend)
+- [x] `/review/[token]` — public page, candidate lookup by review_token; bad token shows friendly error
+- [x] Candidate profile display (name, email, LinkedIn, recruiter notes, role + company context)
+- [x] Inline PDF resume viewer (iframe → `/api/review/[token]/resume`); "Open in new tab" fallback
+- [x] Decision buttons: Interview / Hold / Reject
+- [x] Optional notes field
+- [x] POST `/api/review/[token]/decision` — calls `apply_candidate_review_decision` RPC; atomically updates status + inserts decision row
+- [x] Confirmation state after decision; "Change decision" link to re-decide
+- [x] Email sent to recruiter if recruiter_email exists (Resend, best-effort)
+- [x] GET `/api/review/[token]/resume` — validates token, returns signed URL redirect (1-hour expiry)
 
-**Demo test:** Click review link from email → see candidate → select Interview → confirmation shown → recruiter receives email
+**Known limitations (MVP tradeoffs):**
+- Review page is accessible to anyone with the token; tokens are UUIDs (unguessable) and do not expire
+- Decision notifications are best-effort; a failed email does not fail the decision write
+- Inline viewer requires a browser with PDF support; "Open in new tab" is the fallback
+- Storage read policy does not enforce company scoping (acceptable while reads go through signed URLs via admin client only)
+
+**Demo test:** Click review link from email → see candidate profile + resume → select Interview → confirmation shown → recruiter receives email
+
+---
+
+## Current State — 2026-03-24
+
+**Completed:** Milestones 1, 2, 3 + resume upload/viewer enhancement
+
+The full end-to-end recruiter → hiring manager flow is working:
+- Recruiter opens submission link, fills form (including optional resume PDF), submits
+- Hiring manager receives email with review link
+- Hiring manager opens `/review/[token]`: sees candidate profile, inline resume viewer, makes a decision
+- Decision is written atomically (RPC); recruiter notification sent best-effort
+- All flows are token-scoped; no login required for public surfaces
+
+**Next:** Milestone 4 (Task 5) — Dashboard Polish
 
 ---
 

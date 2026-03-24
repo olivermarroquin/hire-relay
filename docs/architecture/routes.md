@@ -58,8 +58,17 @@
 
 | Method | Route | Auth | Purpose |
 |---|---|---|---|
-| GET | `/api/review/[token]` | None | Get candidate by review_token |
-| POST | `/api/review/[token]/decision` | None | Submit decision by review_token |
+| POST | `/api/review/[token]/decision` | None | Submit decision by review_token (calls `apply_candidate_review_decision` RPC — atomic) |
+| GET | `/api/review/[token]/resume` | None | Validates review_token, returns 302 redirect to a 1-hour signed storage URL |
+
+**Note:** There is no `GET /api/review/[token]` API route. The review page at `/review/[token]` is a Next.js server component that fetches the candidate directly.
+
+**GET `/api/review/[token]/resume` details:**
+- Validates `review_token` against `candidates` table using admin client
+- Returns 404 if token is invalid or `resume_url` is null
+- Generates a 1-hour signed URL server-side via `supabase.storage.createSignedUrl()`
+- Returns `302` redirect to signed URL — raw storage path is never sent to the client
+- Used as the `src` for the inline PDF iframe on the review page
 
 ---
 
