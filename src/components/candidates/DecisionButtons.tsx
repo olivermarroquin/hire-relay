@@ -5,7 +5,7 @@ import { DECISION_LABELS, type DecisionValue } from '@/types'
 
 const DECISIONS: DecisionValue[] = ['interview', 'hold', 'rejected']
 
-export function DecisionButtons() {
+export function DecisionButtons({ currentStatus }: { currentStatus?: string }) {
   const { pending } = useFormStatus()
 
   return (
@@ -16,7 +16,7 @@ export function DecisionButtons() {
           type="submit"
           name="decision"
           value={value}
-          disabled={pending}
+          disabled={pending || value === currentStatus}
           className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 active:bg-zinc-100 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {pending ? 'Saving…' : DECISION_LABELS[value]}

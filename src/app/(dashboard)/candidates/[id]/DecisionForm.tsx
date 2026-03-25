@@ -4,7 +4,7 @@ import { useActionState } from 'react'
 import { submitDecision, type DecisionState } from './actions'
 import { DecisionButtons } from '@/components/candidates/DecisionButtons'
 
-export function DecisionForm({ candidateId }: { candidateId: string }) {
+export function DecisionForm({ candidateId, currentStatus }: { candidateId: string; currentStatus: string }) {
   const [state, formAction] = useActionState<DecisionState, FormData>(submitDecision, null)
 
   return (
@@ -19,7 +19,7 @@ export function DecisionForm({ candidateId }: { candidateId: string }) {
       {state?.error && (
         <p className="text-sm text-red-600">{state.error}</p>
       )}
-      <DecisionButtons />
+      <DecisionButtons currentStatus={currentStatus} />
     </form>
   )
 }

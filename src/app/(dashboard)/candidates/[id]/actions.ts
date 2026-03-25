@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { sendDecisionNotification } from '@/lib/email/resend'
 import type { DecisionValue } from '@/types'
+import { STATUS_LABELS } from '@/types'
 
 const ALLOWED_DECISIONS: DecisionValue[] = ['interview', 'hold', 'rejected']
 
@@ -52,7 +53,7 @@ export async function submitDecision(
   //    and never appears in FormData. It is only used in step 4 below.
   const { data: candidate, error: ownershipError } = await supabase
     .from('candidates')
-    .select('id, full_name, recruiter_email, review_token, roles(title)')
+    .select('id, status, full_name, recruiter_email, review_token, roles(title)')
     .eq('id', candidateId)
     .eq('company_id', profile.company_id)
     .single()
@@ -62,7 +63,15 @@ export async function submitDecision(
     return { error: 'Candidate not found.' }
   }
 
-  // 4. Apply the decision atomically via the canonical DB function.
+  // 4. Reject no-op: decision equals current status.
+  //    Client-side disabling is a UX hint only — this is the authoritative check.
+  if (candidate.status === validatedDecision) {
+    return {
+      error: `This candidate is already marked as ${STATUS_LABELS[validatedDecision]}.`,
+    }
+  }
+
+  // 5. Apply the decision atomically via the canonical DB function.
   //    apply_candidate_review_decision updates candidates.status and inserts
   //    a decisions row inside a single transaction with a FOR UPDATE row lock,
   //    eliminating the partial-write risk of doing two separate table writes.

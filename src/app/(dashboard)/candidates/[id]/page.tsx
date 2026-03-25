@@ -146,7 +146,7 @@ export default async function CandidateDetailPage({ params, searchParams }: Cand
             Decision saved.
           </div>
         )}
-        <DecisionForm candidateId={candidate.id} />
+        <DecisionForm candidateId={candidate.id} currentStatus={candidate.status} />
       </div>
 
       {/* Decision history */}
