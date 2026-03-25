@@ -114,4 +114,18 @@ A running record of key architectural and product decisions made during the buil
 **Alternatives considered:** Let the RPC handle it silently (would succeed or no-op without feedback), skip the check (allows redundant decision rows in history)
 **Impact:** Decision history stays clean — no duplicate rows for the same status. Users get immediate, clear feedback on no-op attempts.
 
+### [2026-03-25] — Ownership tracking via columns on candidates, not a separate table
+**Decision:** Add `owner_profile_id` (FK → profiles) and `owner_updated_at` directly as nullable columns on `candidates` rather than creating a separate `candidate_owners` join table.
+**Rationale:** There is at most one current owner per candidate in the MVP — no history of past owners is needed. Two columns is the minimal schema that supports the feature. A join table would be premature for a single-owner model.
+**Alternatives considered:** Separate `candidate_owners` table with an `is_current` flag or `valid_until` timestamp (correct for multi-owner history, wrong for MVP), storing owner in `candidate_collaboration_entries` as an 'handoff' event only (no queryable column — makes filtering by owner impractical).
+**Impact:** `candidates` gains two nullable columns. Server actions that assign an owner must set both fields together. Ownership history is not tracked at the DB level in MVP — only the current owner is stored.
+
+---
+
+### [2026-03-25] — Collaboration feed as a separate table, not merged into decisions
+**Decision:** Create a new `candidate_collaboration_entries` table for internal notes and feedback rather than adding a `context` or `type` column to the existing `decisions` table.
+**Rationale:** `decisions` is a narrow, well-defined audit log for Interview/Hold/Reject actions. Merging free-form notes, interview feedback, and handoff messages into it would blur the semantics and complicate queries that read the decision history. The two concerns are distinct: decisions track status changes, the collaboration feed tracks internal team communication.
+**Alternatives considered:** Add `entry_type` column to `decisions` and reuse the table (simpler schema, wrong semantics — pollutes the decision audit log), use a generic `events` table (over-engineered for MVP).
+**Impact:** `candidate_collaboration_entries` is append-only with no UPDATE/DELETE policies in MVP. `company_id` is denormalized on the table (same pattern as `candidates`) to keep the RLS SELECT policy a simple equality check. The `visibility` column is present in schema but recruiter-visible UI is deferred to a future step.
+
 <!-- Add new decisions below as you make them -->

@@ -6,6 +6,8 @@ export type UserRole = 'hiring_manager' | 'recruiter' | 'admin'
 export type CandidateStatus = 'pending' | 'interview' | 'hold' | 'rejected'
 export type DecisionValue = 'interview' | 'hold' | 'rejected'
 export type RoleStatus = 'open' | 'paused' | 'closed'
+export type CollaborationEntryType = 'note' | 'interview_feedback' | 'handoff' | 'update'
+export type CollaborationEntryVisibility = 'internal' | 'recruiter_visible'
 
 // ─────────────────────────────────────────
 // Database row types (match Supabase schema)
@@ -53,6 +55,8 @@ export interface Candidate {
   review_token: string
   submitted_by: string | null
   submitted_at: string
+  owner_profile_id: string | null
+  owner_updated_at: string | null
 }
 
 export interface Decision {
@@ -62,6 +66,17 @@ export interface Decision {
   decision: DecisionValue
   notes: string | null
   decided_at: string
+}
+
+export interface CandidateCollaborationEntry {
+  id: string
+  candidate_id: string
+  company_id: string
+  author_profile_id: string | null
+  entry_type: CollaborationEntryType
+  body: string
+  visibility: CollaborationEntryVisibility
+  created_at: string
 }
 
 // ─────────────────────────────────────────

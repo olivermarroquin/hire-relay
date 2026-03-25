@@ -16,6 +16,7 @@ companies
   └── roles (open positions belong to one company)
         └── candidates (submitted against a role)
               └── decisions (append-only decision log)
+              └── candidate_collaboration_entries (append-only internal feed)
 ```
 
 ---
@@ -85,6 +86,26 @@ Submitted against a role. Can come from shareable link or (later) authenticated 
 | review_token | uuid | For secure /review/[token] link — unique per candidate |
 | submitted_by | uuid | FK → profiles.id, nullable (null = shareable link submission) |
 | submitted_at | timestamptz | default now() |
+| owner_profile_id | uuid | FK → profiles.id, nullable. Current internal owner of this candidate (e.g. the interviewer assigned). Set by server actions only — never from client. |
+| owner_updated_at | timestamptz | When owner_profile_id was last changed. Null if never assigned. |
+
+---
+
+### `candidate_collaboration_entries`
+Append-only internal feed. No edit or delete in MVP. One row per note, feedback item, handoff, or update event.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid | PK, default gen_random_uuid() |
+| candidate_id | uuid | FK → candidates.id, on delete cascade |
+| company_id | uuid | FK → companies.id, on delete cascade (denormalized for RLS — derived server-side, never from client) |
+| author_profile_id | uuid | FK → profiles.id, nullable. Null allowed for system-generated entries; in MVP always set to the authenticated user's profile id. |
+| entry_type | text | 'note' \| 'interview_feedback' \| 'handoff' \| 'update' |
+| body | text | Required. Full text of the entry. |
+| visibility | text | 'internal' (default) \| 'recruiter_visible'. UI for recruiter_visible is out of scope for MVP. |
+| created_at | timestamptz | default now() |
+
+**Note:** `company_id` is denormalized here (same as on `candidates`) to keep the RLS SELECT policy a simple equality check without a sub-select join through `candidates`.
 
 ---
 
@@ -111,10 +132,12 @@ The current status on `candidates.status` is the source of truth for display. `d
 | companies | Users can only read their own company |
 | profiles | Users can only read profiles in their company |
 | roles | Users can only CRUD roles in their company |
-| candidates | Users can only read/write candidates where company_id matches |
-| decisions | Users can only read/write decisions for candidates in their company |
+| candidates | Users can only read/update candidates where company_id matches |
 | candidates (insert) | Anyone can insert — no auth required; API route uses service role, token validation is the boundary |
 | candidates (select by token) | Anyone can select a single candidate by review_token — no auth required |
+| decisions | Users can only read decisions for candidates in their company |
+| decisions (insert) | Anyone can insert — guarded by the `apply_candidate_review_decision` RPC (security definer) |
+| candidate_collaboration_entries | Authenticated users can read and insert entries for their own company only. No UPDATE or DELETE in MVP. |
 
 ---
 
@@ -150,6 +173,7 @@ When a candidate is inserted via `POST /api/submit/[token]`:
 | `supabase/migrations/001_initial_schema.sql` | Initial tables, RLS policies, storage bucket |
 | `supabase/migrations/002_fix_rls_policies.sql` | Fixes circular RLS bootstrap on profiles; adds `public.get_my_company_id()` security definer function; rewrites all company-scoped policies to use it |
 | `supabase/migrations/003_review_decision_function.sql` | Adds `public.apply_candidate_review_decision()` plpgsql function — atomically updates `candidates.status` and inserts a `decisions` row in one transaction |
+| `supabase/migrations/004_collaboration_schema.sql` | Adds `owner_profile_id`/`owner_updated_at` to `candidates`; creates `candidate_collaboration_entries` table with RLS; fixes `candidates` UPDATE policy to use `get_my_company_id()` |
 
 Run migrations in order. Never edit existing migration files.
 
