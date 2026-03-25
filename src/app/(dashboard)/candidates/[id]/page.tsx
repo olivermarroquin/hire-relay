@@ -4,15 +4,16 @@ import { createClient } from "@/lib/supabase/server";
 import { CandidateStatusBadge } from "@/components/candidates/CandidateStatusBadge";
 import type { CandidateStatus } from "@/types";
 import { DECISION_LABELS } from "@/types";
-import { submitDecision } from "./actions";
-import { DecisionButtons } from "@/components/candidates/DecisionButtons";
+import { DecisionForm } from "./DecisionForm";
 
 interface CandidateDetailPageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ decision?: string }>;
 }
 
-export default async function CandidateDetailPage({ params }: CandidateDetailPageProps) {
+export default async function CandidateDetailPage({ params, searchParams }: CandidateDetailPageProps) {
   const { id } = await params;
+  const { decision } = await searchParams;
 
   // 1. Resolve authenticated user server-side.
   const supabase = await createClient();
@@ -140,16 +141,12 @@ export default async function CandidateDetailPage({ params }: CandidateDetailPag
       {/* Decision */}
       <div className="space-y-3">
         <p className="text-sm font-medium text-zinc-700">Make a decision</p>
-        <form action={submitDecision} className="space-y-3">
-          <input type="hidden" name="candidate_id" value={candidate.id} />
-          <textarea
-            name="notes"
-            placeholder="Optional note (saved with the decision)"
-            rows={3}
-            className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-1 resize-none"
-          />
-          <DecisionButtons />
-        </form>
+        {decision === "saved" && (
+          <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+            Decision saved.
+          </div>
+        )}
+        <DecisionForm candidateId={candidate.id} />
       </div>
 
       {/* Decision history */}

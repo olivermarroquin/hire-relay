@@ -7,16 +7,21 @@ import type { DecisionValue } from '@/types'
 
 const ALLOWED_DECISIONS: DecisionValue[] = ['interview', 'hold', 'rejected']
 
-export async function submitDecision(formData: FormData) {
+export type DecisionState = { error: string } | null
+
+export async function submitDecision(
+  _prevState: DecisionState,
+  formData: FormData
+): Promise<DecisionState> {
   const candidateId = formData.get('candidate_id')
   const decision = formData.get('decision')
   const rawNotes = formData.get('notes')
 
   if (typeof candidateId !== 'string' || !candidateId) {
-    throw new Error('Missing candidate_id')
+    return { error: 'Invalid request.' }
   }
   if (typeof decision !== 'string' || !ALLOWED_DECISIONS.includes(decision as DecisionValue)) {
-    throw new Error('Invalid decision value')
+    return { error: 'Invalid decision value.' }
   }
 
   const validatedDecision = decision as DecisionValue
@@ -38,7 +43,7 @@ export async function submitDecision(formData: FormData) {
     .eq('id', user.id)
     .single()
 
-  if (!profile?.company_id) throw new Error('No profile found')
+  if (!profile?.company_id) return { error: 'Account configuration error.' }
 
   // 3. Verify candidate ownership AND fetch review_token in one query.
   //    The authenticated (RLS-scoped) client enforces that the candidate
@@ -54,7 +59,7 @@ export async function submitDecision(formData: FormData) {
 
   if (ownershipError || !candidate) {
     console.error('Decision ownership check failed:', ownershipError)
-    throw new Error('Candidate not found')
+    return { error: 'Candidate not found.' }
   }
 
   // 4. Apply the decision atomically via the canonical DB function.
@@ -74,14 +79,14 @@ export async function submitDecision(formData: FormData) {
 
   if (rpcError) {
     console.error('apply_candidate_review_decision error:', rpcError)
-    throw new Error('Failed to record decision')
+    return { error: 'Failed to save decision. Please try again.' }
   }
 
   const result = data?.[0]
 
   if (!result) {
     console.error('apply_candidate_review_decision returned no row for candidate:', candidateId)
-    throw new Error('Failed to record decision')
+    return { error: 'Failed to save decision. Please try again.' }
   }
 
   // 5. Send recruiter notification (best-effort, non-fatal).
@@ -99,6 +104,6 @@ export async function submitDecision(formData: FormData) {
     }
   }
 
-  // 6. Redirect back to candidate detail so the HM sees the updated status.
-  redirect(`/candidates/${candidateId}`)
+  // 6. Redirect back to candidate detail with success flag.
+  redirect(`/candidates/${candidateId}?decision=saved`)
 }
