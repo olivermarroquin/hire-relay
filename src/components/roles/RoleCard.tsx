@@ -35,7 +35,7 @@ export function RoleCard({ role }: RoleCardProps) {
           {role.candidate_count} candidate{role.candidate_count !== 1 ? "s" : ""} total
         </span>
         <Link
-          href={`/candidates?role_id=${role.id}`}
+          href={`/dashboard?role_id=${role.id}`}
           className="text-xs font-medium text-zinc-700 hover:text-zinc-900 underline underline-offset-2"
         >
           View candidates
