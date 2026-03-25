@@ -76,11 +76,15 @@ export default async function CandidateDetailPage({ params }: CandidateDetailPag
   //    candidate.id was verified to belong to profile.company_id above — so this
   //    filter cannot leak decisions from another company's candidate.
   //    The authenticated client also applies the decisions RLS policy as a second guard.
-  const { data: decisions } = await supabase
+  const { data: decisions, error: decisionsError } = await supabase
     .from("decisions")
     .select("id, decision, decided_at, notes")
     .eq("candidate_id", candidate.id)
     .order("decided_at", { ascending: false });
+
+  if (decisionsError) {
+    console.error("Decision history fetch error:", decisionsError);
+  }
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -151,7 +155,9 @@ export default async function CandidateDetailPage({ params }: CandidateDetailPag
       {/* Decision history */}
       <div className="space-y-3">
         <p className="text-sm font-medium text-zinc-700">Decision history</p>
-        {!decisions || decisions.length === 0 ? (
+        {decisionsError ? (
+          <p className="text-sm text-zinc-400">Failed to load decision history.</p>
+        ) : !decisions || decisions.length === 0 ? (
           <p className="text-sm text-zinc-400">No decisions recorded yet.</p>
         ) : (
           <ol className="space-y-2">
