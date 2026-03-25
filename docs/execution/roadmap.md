@@ -79,31 +79,37 @@
 
 ---
 
-## Current State — 2026-03-24
+## Current State — 2026-03-25
 
-**Completed:** Milestones 1, 2, 3 + resume upload/viewer enhancement
+**Completed:** Milestones 1, 2, 3, 4 + resume upload/viewer enhancement
 
-The full end-to-end recruiter → hiring manager flow is working:
+The full end-to-end recruiter → hiring manager flow is working and dashboard-polished:
 - Recruiter opens submission link, fills form (including optional resume PDF), submits
 - Hiring manager receives email with review link
 - Hiring manager opens `/review/[token]`: sees candidate profile, inline resume viewer, makes a decision
 - Decision is written atomically (RPC); recruiter notification sent best-effort
 - All flows are token-scoped; no login required for public surfaces
+- Hiring manager can also make decisions directly from the dashboard candidate detail page
+- Decision history is visible per candidate; status filter tabs on dashboard
 
-**Next:** Milestone 4 (Task 5) — Dashboard Polish
+**Next:** Milestone 5 — Deployment
 
 ---
 
-### Milestone 4 — Dashboard Polish (Day 4–5)
+### Milestone 4 — Dashboard Polish (Day 4–5) ✅ COMPLETE
 
 **Goal:** Dashboard is demo-ready
 
-- [ ] `/candidates/[id]` — full candidate profile with decision history
-- [ ] Status filter tabs on dashboard: All / Pending / Interview / Hold / Rejected
-- [ ] Status badge component (color-coded)
-- [ ] Relative timestamps ("Submitted 2 hours ago")
-- [ ] Copy submission link button per role
-- [ ] Empty states (no candidates, no roles)
+- [x] `/candidates/[id]` — full candidate profile with decision UI + decision history
+- [x] Status filter tabs on dashboard: All / Pending / Interview / Hold / Rejected
+- [x] Status badge component (color-coded)
+- [ ] Relative timestamps ("Submitted 2 hours ago") — deferred, absolute dates used instead
+- [x] Copy submission link button per role (`/roles` page)
+- [x] Empty states (no candidates, no roles, per-status)
+- [x] Decision actions from dashboard (Interview / Hold / Reject + optional notes)
+- [x] Role filter — clicking a role on dashboard filters the candidate list by that role
+- [x] Success/error feedback on decision submission (inline banner)
+- [x] No-op prevention — duplicate decision blocked server-side with user-facing error
 
 **Demo test:** Full flow works cleanly. Dashboard looks real. Two seeded companies don't bleed data.
 

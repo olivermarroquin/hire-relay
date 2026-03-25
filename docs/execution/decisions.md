@@ -92,4 +92,26 @@ A running record of key architectural and product decisions made during the buil
 **Alternatives considered:** Simple link only (worse HM UX — requires navigation away from the decision area), PDF.js or react-pdf (external dependency, overkill for MVP), streaming file through server (more complexity, no benefit over iframe+redirect for this use case)
 **Impact:** ReviewPanel renders `<iframe>` when `hasResume` is true. The raw storage path and signed URL never appear in client-visible HTML — only the opaque secure route URL is in the `src` attribute.
 
+### [2026-03-25] — Dashboard decision form reuses `apply_candidate_review_decision` RPC
+**Decision:** The authenticated dashboard decision action (`/candidates/[id]/actions.ts`) calls the same `apply_candidate_review_decision` plpgsql RPC as the public review flow, rather than doing its own separate table writes.
+**Rationale:** The RPC already provides the correct atomicity guarantee (status update + decision row in one transaction with FOR UPDATE lock). Duplicating the write logic in the dashboard path would introduce a second code path with split-write integrity risk. The `review_token` is fetched server-side during the ownership check and passed to the RPC — it never reaches the client.
+**Alternatives considered:** Direct `candidates.update()` + `decisions.insert()` from the server action (rejected — non-atomic, same integrity risk that prompted the RPC in Milestone 3)
+**Impact:** Single canonical write path for decisions regardless of entry point. `review_token` stays internal to the server action. Ownership must always be verified before calling the RPC.
+
+---
+
+### [2026-03-25] — `useActionState` + `useFormStatus` for server action feedback
+**Decision:** Use React 19's `useActionState` (not the deprecated `useFormState`) with a `DecisionState = { error: string } | null` shape for in-page error feedback. Use `useFormStatus` inside a child component for pending state during submission.
+**Rationale:** Server actions that redirect on success don't need to return anything — only error cases need state. `useActionState` keeps the error inline without a separate error state atom. `useFormStatus` must live in a child of `<form>` (not in the form component itself) — hence the `DecisionButtons` child component handles pending state independently.
+**Alternatives considered:** `useState` + manual fetch (bypasses form action pattern), `useFormState` (deprecated in React 19), toast/global state (overkill for a single form)
+**Impact:** `DecisionForm` owns the form + state; `DecisionButtons` is a focused child that reads `useFormStatus`. Success case redirects server-side via `redirect()`, so no client-side success state is needed — the `?decision=saved` query param on the redirect URL triggers the success banner in the server component.
+
+---
+
+### [2026-03-25] — No-op duplicate decision prevention is server-authoritative
+**Decision:** After the ownership check in the server action, if `candidate.status === validatedDecision`, return an error immediately without calling the RPC.
+**Rationale:** The client disables the button for the current status, but this is a UX hint only — it can be bypassed. The server-side check is the authoritative guard. The error message is user-facing ("This candidate is already marked as…") so the hiring manager understands what happened.
+**Alternatives considered:** Let the RPC handle it silently (would succeed or no-op without feedback), skip the check (allows redundant decision rows in history)
+**Impact:** Decision history stays clean — no duplicate rows for the same status. Users get immediate, clear feedback on no-op attempts.
+
 <!-- Add new decisions below as you make them -->

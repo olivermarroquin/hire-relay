@@ -1,7 +1,7 @@
 # MVP Scope
 
-**Last updated:** 2026-03-24
-**Status:** Active — Milestones 1–3 + resume upload complete. Ready for Milestone 4 (Dashboard Polish).
+**Last updated:** 2026-03-25
+**Status:** Active — Milestones 1–4 complete. Dashboard is demo-ready. Ready for Milestone 5 (Deployment).
 
 ---
 
@@ -33,9 +33,13 @@ A pilot company should be able to:
 - [x] Submission triggers email to hiring manager
 
 ### Hiring Manager Dashboard
-- [x] `/dashboard` — list of open roles with candidate counts
-- [x] `/candidates/[id]` — full candidate profile view
-- [x] Status filter: All / Pending / Interview / Hold / Rejected
+- [x] `/dashboard` — list of open roles with candidate counts; filter by role via `?role_id`
+- [x] `/candidates/[id]` — full candidate profile + decision UI (Interview / Hold / Reject + optional notes)
+- [x] Status filter: All / Pending / Interview / Hold / Rejected (client-side tabs)
+- [x] `/roles` — role list with copy-submission-link button per role
+- [x] Decision history per candidate (append-only log, most recent first)
+- [x] Success/error feedback on decision submission
+- [x] No-op prevention — duplicate decision blocked server-side
 
 ### Candidate Review
 - [x] `/review/[token]` — secure public review page (no login)
@@ -69,7 +73,7 @@ A pilot company should be able to:
 
 ### Dashboard Improvements
 - [ ] Role detail page showing all candidates for that role
-- [ ] Decision history timeline on candidate profile
+- [x] Decision history on candidate profile (built in Milestone 4)
 
 ---
 

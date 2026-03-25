@@ -19,23 +19,11 @@
 
 ---
 
+**Note:** The dashboard pages (`/dashboard`, `/candidates/[id]`, `/roles`) are all Next.js server components. They fetch data directly via the Supabase server client — there are no REST API routes for candidates or roles.
+
+---
+
 ## API Routes (Next.js Route Handlers)
-
-### Candidates
-
-| Method | Route | Auth | Purpose |
-|---|---|---|---|
-| GET | `/api/candidates` | Required | List candidates for company (with filters) |
-| GET | `/api/candidates/[id]` | Required | Single candidate detail |
-| PATCH | `/api/candidates/[id]/decision` | Optional (token) | Submit a decision |
-
-### Roles
-
-| Method | Route | Auth | Purpose |
-|---|---|---|---|
-| GET | `/api/roles` | Required | List roles for company |
-| POST | `/api/roles` | Required | Create a new role |
-| GET | `/api/roles/[id]` | Required | Single role detail |
 
 ### Submission
 
@@ -74,11 +62,11 @@
 
 ## Query Params
 
-### GET /api/candidates
-- `status` — filter by CandidateStatus (optional)
-- `role_id` — filter by role (optional)
-- `limit` — default 50
-- `offset` — default 0
+### GET /dashboard
+- `role_id` — filter candidate list to a specific role (optional); resolved server-side, passed to client component
+
+### GET /candidates/[id]
+- `decision` — set to `saved` on redirect after a successful decision submission; triggers success banner
 
 ---
 
