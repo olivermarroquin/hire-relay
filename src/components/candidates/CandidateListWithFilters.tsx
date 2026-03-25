@@ -26,9 +26,10 @@ const EMPTY_MESSAGES: Record<FilterTab, string> = {
 interface CandidateListWithFiltersProps {
   candidates: CandidateListItem[]
   roleId?: string
+  roleTitle?: string | null
 }
 
-export function CandidateListWithFilters({ candidates, roleId }: CandidateListWithFiltersProps) {
+export function CandidateListWithFilters({ candidates, roleId, roleTitle }: CandidateListWithFiltersProps) {
   const [activeTab, setActiveTab] = useState<FilterTab>('all')
 
   // Apply role filter first (server-determined, not interactive), then status tab filter.
@@ -43,7 +44,7 @@ export function CandidateListWithFilters({ candidates, roleId }: CandidateListWi
     <div className="space-y-3">
       {roleId && (
         <div className="flex items-center gap-2 text-xs text-zinc-500">
-          <span>Filtered by role</span>
+          <span>Filtered by: {roleTitle ?? 'role'}</span>
           <Link href="/dashboard" className="font-medium text-zinc-900 hover:underline underline-offset-2">
             Clear
           </Link>

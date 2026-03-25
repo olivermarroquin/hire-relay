@@ -128,7 +128,11 @@ export default async function DashboardPage({
           </p>
         </div>
 
-        <CandidateListWithFilters candidates={candidates} roleId={roleId} />
+        <CandidateListWithFilters
+          candidates={candidates}
+          roleId={roleId}
+          roleTitle={roleId ? (rolesWithCounts.find((r) => r.id === roleId)?.title ?? null) : null}
+        />
       </div>
     </div>
   );
